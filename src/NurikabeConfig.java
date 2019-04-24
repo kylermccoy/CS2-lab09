@@ -16,6 +16,8 @@ public class NurikabeConfig implements Configuration {
     private int last_move_row ;
     private int columns ;
     private int rows ;
+    private int max_land ;
+    private int max_sea ;
 
     /**
      * Construct the initial configuration from an input file whose contents
@@ -36,8 +38,15 @@ public class NurikabeConfig implements Configuration {
             String[] row_column = line.split(" ") ;
             int row = Integer.parseInt(row_column[0]) ;
             int column = Integer.parseInt(row_column[1]) ;
+            max_land = 0 ;
+            max_sea = 0 ;
             columns = column ;
             rows = row ;
+            ArrayList<Character> parts = new ArrayList<>() ;
+            for(int i = 1; i < 10; i++){
+                String piece = i + "";
+                parts.add(piece.charAt(0)) ;
+            }
             board = new char[row][column] ;
             for(int i = 0; i < row; i++){
                 String next_line = in.nextLine() ;
@@ -49,8 +58,12 @@ public class NurikabeConfig implements Configuration {
                     else{
                         board[i][j] = tiles[j].charAt(0) ;
                     }
+                    if(parts.contains(tiles[j].charAt(0))){
+                        max_land += (Integer.parseInt(tiles[j])) ;
+                    }
                 }
             }
+            max_sea = (columns * rows) - max_land ;
             last_move_col = -1 ;
             last_move_row = 0 ;
         }
@@ -69,6 +82,8 @@ public class NurikabeConfig implements Configuration {
         this.last_move_col = other.last_move_col ;
         this.rows = other.rows ;
         this.columns = other.columns ;
+        this.max_land = other.max_land ;
+        this.max_sea = other.max_sea ;
         this.board = new char[other.rows][other.columns] ;
         this.last_move_col++ ;
         if(this.last_move_col >= this.columns){
@@ -78,7 +93,7 @@ public class NurikabeConfig implements Configuration {
         for(int i = 0; i < this.rows; i++){
             System.arraycopy(other.board[i], 0, this.board[i], 0, this.columns);
         }
-        while(this.board[this.last_move_row][this.last_move_col]!='.'){
+        while(this.last_move_row <= this.rows && this.board[this.last_move_row][this.last_move_col]!='.'){
             this.last_move_col++ ;
             if(this.last_move_col >= this.columns){
                 this.last_move_col = 0 ;
@@ -147,8 +162,6 @@ public class NurikabeConfig implements Configuration {
         start_cell.add(start_col) ;
         visited.add(start_cell) ;
         int dfs_search = 1 + countCellsDFS(start_cell, visited, '@') ;
-        System.out.println(dfs_search) ;
-        System.out.println(total_number_sea_cells);
         return dfs_search == total_number_sea_cells ;
     }
 
@@ -184,12 +197,12 @@ public class NurikabeConfig implements Configuration {
             count = count + 1 + countCellsDFS(east, visited, symbol) ;
         }
 
-        // check S
+        // check W
         ArrayList<Integer> west = new ArrayList<>() ;
         west.add(row) ;
         west.add(col-1) ;
         if(col-1 >= 0 && this.board[row][col-1] == symbol && !visited.contains(west)){
-            visited.add(north) ;
+            visited.add(west) ;
             count = count + 1 + countCellsDFS(west, visited, symbol) ;
         }
 
@@ -203,7 +216,8 @@ public class NurikabeConfig implements Configuration {
         ArrayList<Character> parts = new ArrayList<>() ;
         parts.add('#');
         for(int i = 0; i < 10; i++){
-            parts.add((char)i) ;
+            String piece = i + "" ;
+            parts.add(piece.charAt(0)) ;
         }
 
         // check N
@@ -306,26 +320,54 @@ public class NurikabeConfig implements Configuration {
             ArrayList<Integer> start_cell = coordinates.get(index) ;
             visited.add(start_cell) ;
             int dfs_search = 1 + countCellsDFS(start_cell, visited, '#') ;
-            if( dfs_search > numbered_land.get(index)){
+            System.out.println(numbered_land.get(index));
+            System.out.println(coordinates.get(index));
+            System.out.println(dfs_search);
+            if( dfs_search > numbered_land.get(index) || dfs_search < numbered_land.get(index)){
                 return false ;
             }
         }
         return true ;
     }
 
+    public boolean landCountCheck(){
+        int count = 0 ;
+        for(int i = 0; i < this.rows; i++){
+            for(int j = 0; j < this.columns; j++){
+                if(this.board[i][j]!='@' && this.board[i][j]!='.'){
+                    count++ ;
+                }
+            }
+        }
+        return count <= max_land ;
+    }
+
+    public boolean seaCountCheck(){
+        int count = 0 ;
+        for(int i = 0; i < this.rows; i++){
+            for(int j = 0; j < this.columns; j++){
+                if(this.board[i][j]=='@'){
+                    count++ ;
+                }
+            }
+        }
+        return count <= max_sea ;
+    }
+
     @Override
     public boolean isValid() {
         // TODO
+        if (!seaCountCheck()) {
+            return false ;
+        }
+        if(!landCountCheck()){
+            return false ;
+        }
         if(!noPools()){
            return false ;
         }
-        if(!IslandNumberCountCheck()){
-            return false ;
-        }
         if(isGoal()){
-            System.out.println(allSeaConnects());
-            System.out.println(noLandConnects());
-            return allSeaConnects() && noLandConnects() ;
+            return allSeaConnects() && noLandConnects() && IslandNumberCountCheck() ;
         }
         return true ;
     }
@@ -333,7 +375,14 @@ public class NurikabeConfig implements Configuration {
     @Override
     public boolean isGoal() {
         // TODO
-        return (this.last_move_col == this.columns - 1) && (this.last_move_row == this.rows - 1);
+        for( int i = 0; i < this.rows; i++){
+            for( int j = 0; j < this.columns; j++){
+                if(board[i][j] == '.'){
+                    return false ;
+                }
+            }
+        }
+        return true ;
     }
 
     /**
