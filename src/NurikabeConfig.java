@@ -97,9 +97,11 @@ public class NurikabeConfig implements Configuration {
             this.last_move_col = 0 ;
             this.last_move_row++ ;
         }
+        // hard copy
         for(int i = 0; i < this.rows; i++){
             System.arraycopy(other.board[i], 0, this.board[i], 0, this.columns);
         }
+        // empty cell check
         while(this.last_move_row <= this.rows && this.board[this.last_move_row][this.last_move_col]!='.'){
             this.last_move_col++ ;
             if(this.last_move_col >= this.columns){
@@ -123,8 +125,10 @@ public class NurikabeConfig implements Configuration {
     public Collection<Configuration> getSuccessors() {
         // TODO
         List<Configuration> successors = new LinkedList<>() ;
+        // land copy
         NurikabeConfig copy_land = new NurikabeConfig(this, true) ;
         successors.add(copy_land);
+        // sea copy
         NurikabeConfig copy_sea = new NurikabeConfig(this, false) ;
         successors.add(copy_sea);
         return successors ;
@@ -141,12 +145,15 @@ public class NurikabeConfig implements Configuration {
         boolean checkN = false ;
         boolean checkNW = true ;
         boolean checkW = false ;
+        // checks west cell
         if( (this.last_move_col-1>= 0)&&(this.board[this.last_move_row][this.last_move_col-1]=='@') ){
             checkW = true ;
         }
+        // checks north cell
         if( (this.last_move_row-1>=0)&&(this.board[this.last_move_row-1][this.last_move_col]=='@') ){
             checkN = true ;
         }
+        // checks northwest cell
         if (checkN && checkW){
             if(this.board[this.last_move_row-1][this.last_move_col-1]=='@'){
                 checkNW = false ;
@@ -165,6 +172,7 @@ public class NurikabeConfig implements Configuration {
         int start_row = 0;
         int start_col = 0;
         boolean first_sea_cell = true ;
+        // gets starter sea cell
         for( int i = 0; i < this.rows; i++){
             for( int j = 0; j < this.columns; j++){
                 if(this.board[i][j]=='@'){
@@ -327,6 +335,7 @@ public class NurikabeConfig implements Configuration {
                 }
             }
         }
+        // loops through each numbered island coordinate to make sure it doesn't connect to another
         for(int index = 0; index < numbered_land.size(); index++){
             Set<ArrayList<Integer>> visited = new HashSet<>() ;
             ArrayList<Integer> start_cell = coordinates.get(index) ;
@@ -357,6 +366,7 @@ public class NurikabeConfig implements Configuration {
                 }
             }
         }
+        // loops through island coordinates to check if land numbers match
         for(int index = 0; index < numbered_land.size(); index++){
             Set<ArrayList<Integer>> visited = new HashSet<>() ;
             ArrayList<Integer> start_cell = coordinates.get(index) ;
@@ -419,6 +429,7 @@ public class NurikabeConfig implements Configuration {
                 }
             }
         }
+        // loops through coordinates to check if land connected goes over island number
         for(int index = 0; index < numbered_land.size(); index++){
             Set<ArrayList<Integer>> visited = new HashSet<>() ;
             ArrayList<Integer> start_cell = coordinates.get(index) ;
