@@ -11,12 +11,19 @@ import java.util.*;
 public class NurikabeConfig implements Configuration {
 
     // TODO
+    // 2D array to keep track of what lies where
     private char[][] board ;
+    // last column where a move was made
     private int last_move_col ;
+    // last row where a move was made
     private int last_move_row ;
+    // total columns in game
     private int columns ;
+    // total rows in game
     private int rows ;
+    // max amount of land in game
     private int max_land ;
+    // max amount of sea in game
     private int max_sea ;
 
     /**
@@ -107,6 +114,11 @@ public class NurikabeConfig implements Configuration {
         }
     }
 
+    /**
+     * Gets the successors of the current move
+     * @return linkedlist of two copies of the game, one with the next move land,
+     * and one with next move sea
+     */
     @Override
     public Collection<Configuration> getSuccessors() {
         // TODO
@@ -118,6 +130,10 @@ public class NurikabeConfig implements Configuration {
         return successors ;
     }
 
+    /**
+     * checks if an sea cells are formed in a 2x2 form
+     * @return boolean if a pool has formed
+     */
     public boolean noPools(){
         if (this.board[this.last_move_row][this.last_move_col] != '@') {
             return true ;
@@ -139,6 +155,11 @@ public class NurikabeConfig implements Configuration {
         return checkNW ;
     }
 
+    /**
+     * checks if all the sea cells are connected by checking if the dfs returns a count
+     * matching the total amount of sea cells
+     * @return boolean if all sea cells connect
+     */
     public boolean allSeaConnects(){
         int total_number_sea_cells = 0 ;
         int start_row = 0;
@@ -165,6 +186,13 @@ public class NurikabeConfig implements Configuration {
         return dfs_search == total_number_sea_cells ;
     }
 
+    /**
+     * DFS search to count the number of times the symbol occurs in the connected path
+     * @param start arraylist containing coordinates for first node
+     * @param visited set of already visited coordinates
+     * @param symbol symbol to follow path
+     * @return count of that symbol in dfs path
+     */
     public int countCellsDFS(ArrayList<Integer> start, Set<ArrayList<Integer>> visited, char symbol){
         int count = 0 ;
         int row = start.get(0) ;
@@ -209,6 +237,12 @@ public class NurikabeConfig implements Configuration {
         return count ;
     }
 
+    /**
+     * dfs checks if the numbered island is connected to another numbered island
+     * @param start coordinates of starting numbered island
+     * @param visited coordinates to be skipped
+     * @return boolean true if numbered islands connects to another
+     */
     public boolean landTouch(ArrayList<Integer> start, Set<ArrayList<Integer>> visited){
         boolean touch = false ;
         int row = start.get(0) ;
@@ -275,6 +309,10 @@ public class NurikabeConfig implements Configuration {
         return touch ;
     }
 
+    /**
+     * checks if the land is connected to more land
+     * @return boolean if land doesnt connect
+     */
     public boolean noLandConnects(){
         ArrayList<Integer> numbered_land = new ArrayList<>() ;
         ArrayList<ArrayList<Integer>> coordinates = new ArrayList<>() ;
@@ -301,6 +339,10 @@ public class NurikabeConfig implements Configuration {
         return true ;
     }
 
+    /**
+     * counts that the numbered island has the number of land connected to it
+     * @return boolean if count matches island number
+     */
     public boolean IslandNumberCountCheck(){
         ArrayList<Integer> numbered_land = new ArrayList<>() ;
         ArrayList<ArrayList<Integer>> coordinates = new ArrayList<>() ;
@@ -320,9 +362,6 @@ public class NurikabeConfig implements Configuration {
             ArrayList<Integer> start_cell = coordinates.get(index) ;
             visited.add(start_cell) ;
             int dfs_search = 1 + countCellsDFS(start_cell, visited, '#') ;
-            System.out.println(numbered_land.get(index));
-            System.out.println(coordinates.get(index));
-            System.out.println(dfs_search);
             if( dfs_search > numbered_land.get(index) || dfs_search < numbered_land.get(index)){
                 return false ;
             }
@@ -330,6 +369,10 @@ public class NurikabeConfig implements Configuration {
         return true ;
     }
 
+    /**
+     * checks to make sure land on board doesn't exceed max
+     * @return boolean
+     */
     public boolean landCountCheck(){
         int count = 0 ;
         for(int i = 0; i < this.rows; i++){
@@ -342,6 +385,10 @@ public class NurikabeConfig implements Configuration {
         return count <= max_land ;
     }
 
+    /**
+     * checks to make sure sea cells on board doesn't exceed max
+     * @return boolean
+     */
     public boolean seaCountCheck(){
         int count = 0 ;
         for(int i = 0; i < this.rows; i++){
@@ -354,6 +401,40 @@ public class NurikabeConfig implements Configuration {
         return count <= max_sea ;
     }
 
+    /**
+     * checks to ensure no numbered island doesn't go over the max amount of land
+     * @return boolean
+     */
+    public boolean IslandNumberCountOverCheck(){
+        ArrayList<Integer> numbered_land = new ArrayList<>() ;
+        ArrayList<ArrayList<Integer>> coordinates = new ArrayList<>() ;
+        for( int i = 0; i < this.rows; i++){
+            for( int j = 0; j < this.columns; j++){
+                if( board[i][j] != '@' && board[i][j] != '#' && board[i][j] != '.'){
+                    numbered_land.add(Integer.parseInt(board[i][j] + "")) ;
+                    ArrayList<Integer> coord = new ArrayList<>() ;
+                    coord.add(i) ;
+                    coord.add(j) ;
+                    coordinates.add(coord) ;
+                }
+            }
+        }
+        for(int index = 0; index < numbered_land.size(); index++){
+            Set<ArrayList<Integer>> visited = new HashSet<>() ;
+            ArrayList<Integer> start_cell = coordinates.get(index) ;
+            visited.add(start_cell) ;
+            int dfs_search = 1 + countCellsDFS(start_cell, visited, '#') ;
+            if( dfs_search > numbered_land.get(index)){
+                return true ;
+            }
+        }
+        return false ;
+    }
+
+    /**
+     * checks to see if config is valid solution
+     * @return boolean
+     */
     @Override
     public boolean isValid() {
         // TODO
@@ -366,12 +447,19 @@ public class NurikabeConfig implements Configuration {
         if(!noPools()){
            return false ;
         }
+        if(IslandNumberCountOverCheck()){
+            return false ;
+        }
         if(isGoal()){
             return allSeaConnects() && noLandConnects() && IslandNumberCountCheck() ;
         }
         return true ;
     }
 
+    /**
+     * checks to see if the board is full
+     * @return boolean
+     */
     @Override
     public boolean isGoal() {
         // TODO
